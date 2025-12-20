@@ -1,0 +1,7 @@
+{
+  "prisma.pinToPrisma6": true,
+  // Prettier를 기본 포매터로 지정
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  // 저장 시 자동 포매팅 활성화
+  "editor.formatOnSave": true
+}
