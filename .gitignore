@@ -54,3 +54,14 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+
+/generated/prisma
+# Prisma Client (기계가 생성한 코드)
+# 명시적관리 이중장치 
+node_modules/.prisma
+
+# 데이터베이스 파일 (SQLite)
+# .db, .db-journal 등의 파일 제외
+prisma/*.db
+prisma/*.db-journal
