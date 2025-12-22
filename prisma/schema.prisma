@@ -13,9 +13,176 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// 예시 모델 
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  nickname  String   // 사용자 닉네임
+  profileImage String?  // 프로필 이미지 URL
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  socialAccounts SocialAccount[]
+  wallet         Wallet?
+  points         Point[]
+  transactions   WalletTransaction[]
 }
+
+enum SocialProvider {
+  KAKAO
+  NAVER
+}
+
+model SocialAccount {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  provider     SocialProvider 
+  providerId   String   // 소셜 플랫폼에서 제공하는 고유 ID
+  email        String?  // 소셜에서 제공하는 이메일 (선택적)
+  
+  accessToken  String?  // 소셜 액세스 토큰 (필요시)
+  refreshToken String?  // 소셜 리프레시 토큰 (필요시)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@unique([provider, providerId]) // 같은 플랫폼의 같은 ID는 1개만
+  @@index([userId])
+}
+
+
+model  Wallet {
+  userId Int  @id
+  cash   Int  @default(0)
+  point  Int  @default(0)
+  version   Int      @default(0) 
+  updatedAt DateTime @updatedAt
+  
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+
+
+model Point {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+ 
+  amount    Int
+  remaining Int
+  earnedAt  DateTime @default(now())
+  expiresAt DateTime
+  
+	user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pointUsage PointUsage[]
+  
+  @@index([userId, expiresAt])
+  @@index([userId, remaining])
+}
+
+model PointUsage {
+  id            Int               @id @default(autoincrement())
+  transactionId Int
+  pointId       Int
+  usedAmount    Int
+  createdAt     DateTime          @default(now())
+
+  transaction   WalletTransaction @relation(fields: [transactionId], references: [id])
+  point         Point             @relation(fields: [pointId], references: [id])
+}
+
+
+enum WalletType {
+  CASH
+  POINT
+}
+
+// 1단계: 재화의 흐름 방향
+enum TransactionType {
+  EARN    // 획득
+  USE     // 사용
+  EXPIRE  // 만료
+}
+
+
+// 2단계: 소스 도메인 (대분류) - "어떤 시스템에서 왔는가?"
+enum SourceType {
+  ORDER   // 주문/결제 시스템
+  COUPON  // 쿠폰 시스템
+  EVENT   // 프로모션/이벤트 시스템 (출석체크, 룰렛 등)
+  SYSTEM  // 관리자 수동 지급/보상 시스템
+}
+
+// 3단계: 구체적 사유 코드 (중분류) - "구체적으로 왜 발생했나?"
+enum TransactionReasonCode {
+  // === 포인트 획득 ===
+  DAILY_CHECK_IN           // 출석체크
+  COUPON_REDEEM            // 쿠폰 사용
+	ROULETTE_REWARD          // 룰렛 보상 (포인트)
+  COMPENSATION             // 보상/보전
+  
+  // === 포인트 만료 ===
+  POINT_EXPIRED            // 포인트 만료
+  
+  // === 캐시 획득 ===
+  CASH_PURCHASE            // 캐시 구매
+  ROULETTE_REWARD_CASH     // 룰렛 보상 (캐시)
+   
+  // === 캐시소멸 ===
+  REFUND                // 결제 취소로 인한 환불
+  
+  // === 캐시/포인트 획득 ===
+  ADMIN_GRANT           // 관리자 수동 지급
+  
+  // === 재화 사용 ===
+  ROULETTE_SPIN            // 룰렛 사용
+  ITEM_PURCHASE         // 아이템 상점 구매
+}
+
+
+// 사유 마스터 테이블: "유저나 어드민에게 어떻게 보여줄 것인가?"
+model TransactionReasonMaster {
+  code        TransactionReasonCode @id
+  name        String                // 예: "겨울맞이 출석체크 보상"
+  category    SourceType            // 대분류와 매핑 (EVENT, ORDER 등)
+  description String?               // 상세 설명
+  iconUrl     String?               // UI 표시용 아이콘
+  
+  transactions WalletTransaction[]
+}
+
+
+model WalletTransaction{
+  id           Int                   @id @default(autoincrement())
+  userId       Int
+
+  walletType   WalletType
+  // [방향]
+  changeType   TransactionType
+  
+  // [원천 추적] 
+  sourceType   SourceType
+  sourceId     String                // 실제 도메인 테이블의 PK (주문번호, 쿠폰번호 등)
+  
+  // [사유 및 메타데이터]
+  reasonCode   TransactionReasonCode
+  
+  
+  // [금액 정보]
+  amount       Int                   // 변동 금액
+  balanceAfter Int                   // 변동 후 잔액 (스냅샷)
+  
+  // [기타]
+  metadata     Json?                 // 추가 정보 (어드민 메모, 환불 ID 등)
+  createdAt    DateTime              @default(now())
+
+  reasonMaster TransactionReasonMaster @relation(fields: [reasonCode], references: [code])
+  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pointUsage   PointUsage[]
+
+  // 인덱스 설계: 추적과 조회를 위한 핵심
+  @@index([sourceType, sourceId])    // 멱등성 체크 및 원천 데이터 추적용
+  @@index([userId, createdAt])       // 마이페이지 내역 조회용
+  @@index([reasonCode])              // 어드민 통계용
+}   
