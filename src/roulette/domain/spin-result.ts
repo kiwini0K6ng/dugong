@@ -1,15 +1,11 @@
-import { RoulettePaymentType, SlotType } from '../roulette.enum';
+import { SlotType } from '../roulette.enum';
 import { RouletteSlot } from './roulette-slot.entity';
 
 /**
  * 룰렛 참여 결과
  */
 export class SpinResult {
-  constructor(
-    public readonly slot: RouletteSlot,
-    public readonly paymentType: RoulettePaymentType,
-    public readonly costAmount: number,
-  ) {}
+  constructor(public readonly slot: RouletteSlot) {}
 
   /**
    * 당첨 여부 (꽝이 아닌지)

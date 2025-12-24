@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 import { RouletteSlot } from './roulette-slot.entity';
-import { RoulettePaymentType, RouletteStatus } from '../roulette.enum';
+import { RouletteStatus } from '../roulette.enum';
 import { SpinResult } from './spin-result';
 
 export class Roulette {
@@ -9,8 +9,6 @@ export class Roulette {
     public readonly name: string,
     public readonly description: string | null,
     public readonly freeLimitPerDay: number,
-    public readonly pointCost: number | null,
-    public readonly cashCost: number | null,
     public readonly startAt: Date,
     public readonly endAt: Date,
     public readonly status: RouletteStatus,
@@ -34,14 +32,8 @@ export class Roulette {
       );
     }
 
-    if (
-      this.freeLimitPerDay === 0 &&
-      this.pointCost === null &&
-      this.cashCost === null
-    ) {
-      throw new BadRequestException(
-        '최소 1개 이상의 참여 방식이 활성화되어야 합니다',
-      );
+    if (this.freeLimitPerDay === 0) {
+      throw new BadRequestException('무료 참여 횟수는 1 이상이어야 합니다');
     }
   }
 
@@ -65,52 +57,6 @@ export class Roulette {
   }
 
   /**
-   * 포인트 참여 가능한지 확인
-   */
-  canSpinWithPoint(): boolean {
-    return this.pointCost !== null && this.pointCost > 0;
-  }
-
-  /**
-   * 캐시 참여 가능한지 확인
-   */
-  canSpinWithCash(): boolean {
-    return this.cashCost !== null && this.cashCost > 0;
-  }
-
-  /**
-   * 특정 참여 방식이 가능한지 확인
-   */
-  canSpinWith(paymentType: RoulettePaymentType): boolean {
-    switch (paymentType) {
-      case RoulettePaymentType.FREE:
-        return this.canSpinFree();
-      case RoulettePaymentType.POINT:
-        return this.canSpinWithPoint();
-      case RoulettePaymentType.CASH:
-        return this.canSpinWithCash();
-      default:
-        return false;
-    }
-  }
-
-  /**
-   * 참여 비용 조회
-   */
-  getCost(paymentType: RoulettePaymentType): number {
-    switch (paymentType) {
-      case RoulettePaymentType.FREE:
-        return 0;
-      case RoulettePaymentType.POINT:
-        return this.pointCost ?? 0;
-      case RoulettePaymentType.CASH:
-        return this.cashCost ?? 0;
-      default:
-        return 0;
-    }
-  }
-
-  /**
    * 무료 참여 가능 횟수 확인
    * @param todaySpinCount 오늘 이미 참여한 무료 횟수
    */
@@ -125,61 +71,22 @@ export class Roulette {
   /**
    * 핵심 로직: 룰렛 돌리기 (확률 기반 추첨)
    */
-  spin(paymentType: RoulettePaymentType): SpinResult {
+  spin(): SpinResult {
     // 1. 룰렛 진행 중인지 확인
     if (!this.isActive()) {
       throw new BadRequestException('진행 중인 룰렛이 아닙니다');
     }
 
-    // 2. 해당 참여 방식이 가능한지 확인
-    if (!this.canSpinWith(paymentType)) {
-      throw new BadRequestException('해당 참여 방식은 허용되지 않습니다');
+    // 2. 무료 참여 가능한지 확인
+    if (!this.canSpinFree()) {
+      throw new BadRequestException('무료 참여가 불가능합니다');
     }
 
     // 3. 확률 기반 추첨
-    const selectedSlot = this.drawSlotByWeightedSum();
+    const selectedSlot = this.drawSlot();
 
-    // 4. 참여 비용 계산
-    const costAmount = this.getCost(paymentType);
-
-    // 5. 결과 반환
-    return new SpinResult(selectedSlot, paymentType, costAmount);
-  }
-
-  /**
-   * 가중치 누적합 방식 추첨
-   */
-  drawSlotByWeightedSum(): RouletteSlot {
-    // 1. 남은 할당량이 있는 슬롯만 필터링
-    const availableSlots = this.slots.filter((slot) =>
-      slot.hasRemainingQuota(),
-    );
-
-    if (availableSlots.length === 0) {
-      throw new BadRequestException('모든 슬롯의 할당량이 소진되었습니다');
-    }
-
-    // 2. 남은 할당량 기준으로 가중치 누적합 계산
-    // 남은 할당량을 모두 더한다.
-    const totalRemaining = availableSlots.reduce(
-      (sum, slot) => sum + slot.remainingQuota,
-      0,
-    );
-
-    // 3. 랜덤 값 생성 (0 ~ totalRemaining)
-    const random = Math.floor(Math.random() * totalRemaining);
-
-    // 4. 누적합으로 슬롯 선택
-    let cumulative = 0;
-    for (const slot of availableSlots) {
-      cumulative += slot.remainingQuota;
-      if (random < cumulative) {
-        return slot;
-      }
-    }
-
-    // Fallback
-    return availableSlots[availableSlots.length - 1];
+    // 4. 결과 반환
+    return new SpinResult(selectedSlot);
   }
 
   /**

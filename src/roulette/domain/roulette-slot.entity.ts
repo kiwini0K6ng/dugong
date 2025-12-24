@@ -13,7 +13,6 @@ export class RouletteSlot {
     public readonly rewardAmount: number,
     public readonly sortOrder: number,
     public readonly totalQuota: number,
-    public remainingQuota: number,
   ) {
     this.validate();
   }
@@ -37,20 +36,5 @@ export class RouletteSlot {
    */
   hasReward(): boolean {
     return this.type !== SlotType.NOTHING && this.rewardAmount > 0;
-  }
-
-  /**
-   * 남은 할당량이 있는지 확인
-   */
-  hasRemainingQuota(): boolean {
-    return this.remainingQuota > 0;
-  }
-
-  /**
-   * 할당률 (남은 비율)
-   */
-  getQuotaRate(): number {
-    if (this.totalQuota === 0) return 0;
-    return this.remainingQuota / this.totalQuota;
   }
 }

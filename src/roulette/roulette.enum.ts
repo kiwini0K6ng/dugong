@@ -15,12 +15,3 @@ export enum SlotType {
   POINT = 'POINT', // 포인트 지급
   CASH = 'CASH', // 캐시 지급
 }
-
-/**
- * 참여 방식
- */
-export enum RoulettePaymentType {
-  FREE = 'FREE', // 무료
-  POINT = 'POINT', // 포인트 소비
-  CASH = 'CASH', // 캐시 소비
-}
