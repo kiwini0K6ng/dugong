@@ -14,192 +14,188 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  nickname  String   // 사용자 닉네임
-  profileImage String?  // 프로필 이미지 URL
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  
+  id           Int     @id @default(autoincrement())
+  email        String  @unique
+  nickname     String
+  profileImage String?
+
+  // SQLite는 Enum을 지원하지 않으므로 String으로 저장
+  // 애플리케이션에서 UserRole, UserStatus Enum으로 매핑
+  role   String @default("USER") // USER, ADMIN
+  status String @default("ACTIVE") // ACTIVE, SUSPENDED, DELETED
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // Soft delete
+
   // Relations
   socialAccounts SocialAccount[]
   wallet         Wallet?
   points         Point[]
   transactions   WalletTransaction[]
-}
 
-enum SocialProvider {
-  KAKAO
-  NAVER
+  @@map("users")
 }
 
 model SocialAccount {
-  id           Int      @id @default(autoincrement())
-  userId       Int
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  provider     SocialProvider 
-  providerId   String   // 소셜 플랫폼에서 제공하는 고유 ID
-  email        String?  // 소셜에서 제공하는 이메일 (선택적)
-  
-  accessToken  String?  // 소셜 액세스 토큰 (필요시)
-  refreshToken String?  // 소셜 리프레시 토큰 (필요시)
-  
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  
+  id     Int  @id @default(autoincrement())
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  provider   String
+  providerId String // 소셜 플랫폼에서 제공하는 고유 ID
+  email      String // 해당 소셜의 이메일
+  isPrimary  Boolean @default(false) // 첫 가입 계정 여부
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([provider, providerId]) // 같은 플랫폼의 같은 ID는 1개만
   @@index([userId])
+  @@map("social_accounts")
 }
 
-
-model  Wallet {
-  userId Int  @id
-  cash   Int  @default(0)
-  point  Int  @default(0)
-  version   Int      @default(0) 
+model Wallet {
+  userId    Int      @id
+  cash      Int      @default(0)
+  point     Int      @default(0)
+  version   Int      @default(0)
   updatedAt DateTime @updatedAt
-  
-  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("wallets")
 }
-
-
 
 model Point {
-  id        Int      @id @default(autoincrement())
-  userId    Int
- 
+  id     Int @id @default(autoincrement())
+  userId Int
+
   amount    Int
   remaining Int
   earnedAt  DateTime @default(now())
   expiresAt DateTime
-  
-	user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   pointUsage PointUsage[]
-  
+
   @@index([userId, expiresAt])
   @@index([userId, remaining])
+  @@map("points")
 }
 
 model PointUsage {
-  id            Int               @id @default(autoincrement())
+  id            Int      @id @default(autoincrement())
   transactionId Int
   pointId       Int
   usedAmount    Int
-  createdAt     DateTime          @default(now())
+  createdAt     DateTime @default(now())
 
-  transaction   WalletTransaction @relation(fields: [transactionId], references: [id])
-  point         Point             @relation(fields: [pointId], references: [id])
+  transaction WalletTransaction @relation(fields: [transactionId], references: [id])
+  point       Point             @relation(fields: [pointId], references: [id])
 }
-
 
 enum CurrencyType {
   CASH
   POINT
 }
 
-
 enum TransactionType {
-  EARN    // 획득
-  USE     // 사용
-  EXPIRE  // 만료
+  EARN // 획득
+  USE // 사용
+  EXPIRE // 만료
 }
-
 
 enum SourceType {
   // === 포인트 획득 ===
-  COUPON_REDEEM             // 쿠폰 사용
-  ATTENDANCE_LOG            // 출석체크 기록
-  ROULETTE_LOG              // 룰렛 결과 기록
-  COMPENSATION              // 보상/보전
-  
+  COUPON_REDEEM // 쿠폰 사용
+  ATTENDANCE_LOG // 출석체크 기록
+  ROULETTE_LOG // 룰렛 결과 기록
+  COMPENSATION // 보상/보전
+
   // === 포인트 만료 ===
-  POINT_EXPIRED            // 포인트 만료
-  
+  POINT_EXPIRED // 포인트 만료
+
   // === 캐시 획득 ===
-  ORDER                    // 주문/결제 테이블
-  ROULETTE_REWARD_CASH     // 룰렛 보상 (캐시)
-   
+  ORDER // 주문/결제 테이블
+  ROULETTE_REWARD_CASH // 룰렛 보상 (캐시)
+
   // === 캐시소멸 ===
-  REFUND                   // 결제 취소로 인한 환불
-  
+  REFUND // 결제 취소로 인한 환불
+
   // === 캐시/포인트 획득 ===
-  ADMIN_GRANT              // 관리자 수동 지급
-  
+  ADMIN_GRANT // 관리자 수동 지급
+
   // === 재화 사용 ===
-  ROULETTE_SPIN            // 룰렛 사용
-  ITEM_PURCHASE            // 아이템 상점 구매
+  ROULETTE_SPIN // 룰렛 사용
+  ITEM_PURCHASE // 아이템 상점 구매
 }
 
+model WalletTransaction {
+  id     Int @id @default(autoincrement())
+  userId Int
 
-
-
-model WalletTransaction{
-  id           Int                   @id @default(autoincrement())
-  userId       Int
-
-  currencyType   CurrencyType
+  currencyType CurrencyType
   changeType   TransactionType
-  
+
   // [원천 추적] 
-  sourceType   SourceType
-  sourceId     String                // 실제 도메인 테이블의 PK (주문번호, 쿠폰번호 등)
+  sourceType SourceType
+  sourceId   String // 실제 도메인 테이블의 PK (주문번호, 쿠폰번호 등)
 
-  
   // [금액 정보]
-  amount       Int                   // 변동 금액
-  balanceAfter Int                   // 변동 후 잔액 (스냅샷)
-  
-  // [기타]
-  metadata     Json?                 // 추가 정보 (어드민 메모, 환불 ID 등)
-  createdAt    DateTime              @default(now())
+  amount       Int // 변동 금액
+  balanceAfter Int // 변동 후 잔액 (스냅샷)
 
-  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  pointUsage   PointUsage[]
+  // [기타]
+  metadata  Json? // 추가 정보 (어드민 메모, 환불 ID 등)
+  createdAt DateTime @default(now())
+
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pointUsage PointUsage[]
 
   // 인덱스 설계: 추적과 조회를 위한 핵심
-  @@index([sourceType, sourceId])    // 멱등성 체크 및 원천 데이터 추적용
-  @@index([userId, createdAt])       // 마이페이지 내역 조회용
-}   
+  @@index([sourceType, sourceId]) // 멱등성 체크 및 원천 데이터 추적용
+  @@index([userId, createdAt]) // 마이페이지 내역 조회용
+}
 
 model Roulette {
-  id              Int            @id @default(autoincrement())
+  id              Int      @id @default(autoincrement())
   name            String
   description     String?
-  freeLimitPerDay Int            @default(1)
+  freeLimitPerDay Int      @default(1)
   startAt         DateTime
   endAt           DateTime
-  
+
   // SQLite는 Enum이 없으므로 String으로 저장
   // 애플리케이션(NestJS) 단에서 RouletteStatus Enum으로 매핑하여 사용
-  status          String         @default("INACTIVE") 
-  
-  slots           RouletteSlot[]
-  
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  status String @default("INACTIVE")
+
+  slots RouletteSlot[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("roulettes")
 }
 
 model RouletteSlot {
-  id           Int      @id @default(autoincrement())
-  rouletteId   Int
-  
+  id         Int @id @default(autoincrement())
+  rouletteId Int
+
   // SQLite는 Enum이 없으므로 String으로 저장
-  type         String   @default("NOTHING")
-  
-  displayName  String
-  
+  type String @default("NOTHING")
+
+  displayName String
+
   // SQLite는 Decimal을 지원하지 않아 Float(Real)을 사용하거나 
   // 정수형으로 저장 후 계산(예: 10000을 100.00%로 간주)해야 합니다.
   // 여기서는 편의상 Float을 사용합니다.
-  rate         Float    
-  
-  rewardAmount Int      @default(0)
-  sortOrder    Int      @default(0)
+  rate Float
 
-  roulette     Roulette @relation(fields: [rouletteId], references: [id], onDelete: Cascade)
+  rewardAmount Int @default(0)
+  sortOrder    Int @default(0)
+
+  roulette Roulette @relation(fields: [rouletteId], references: [id], onDelete: Cascade)
 
   @@map("roulette_slots")
 }
