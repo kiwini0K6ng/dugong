@@ -13,6 +13,8 @@ export class Roulette {
     public readonly endAt: Date,
     public readonly status: RouletteStatus,
     private readonly slots: RouletteSlot[],
+    public readonly createdAt: Date,
+    public readonly updatedAt: Date,
   ) {
     this.validate();
   }

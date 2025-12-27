@@ -12,7 +12,6 @@ export class RouletteSlot {
     public readonly rate: number, // 0.01 ~ 100
     public readonly rewardAmount: number,
     public readonly sortOrder: number,
-    public readonly totalQuota: number,
   ) {
     this.validate();
   }

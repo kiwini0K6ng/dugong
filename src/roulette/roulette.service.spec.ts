@@ -37,15 +37,17 @@ describe('RouletteService', () => {
         tomorrow,
         RouletteStatus.ACTIVE,
         slots,
+        yesterday,
+        new Date(),
       );
     };
 
     it('설정된 확률대로 각 슬롯이 추첨되어야 함', () => {
       // Given: 50% 꽝, 30% 포인트, 20% 캐시
       const slots: RouletteSlot[] = [
-        new RouletteSlot(1, SlotType.NOTHING, '꽝', 50, 0, 1, 50),
-        new RouletteSlot(2, SlotType.POINT, '포인트', 30, 100, 2, 30),
-        new RouletteSlot(3, SlotType.CASH, '캐시', 20, 50, 3, 20),
+        new RouletteSlot(1, SlotType.NOTHING, '꽝', 50, 0, 1),
+        new RouletteSlot(2, SlotType.POINT, '포인트', 30, 100, 2),
+        new RouletteSlot(3, SlotType.CASH, '캐시', 20, 50, 3),
       ];
 
       const roulette = createTestRoulette(slots);
@@ -84,8 +86,8 @@ describe('RouletteService', () => {
     it('확률 합계가 100%가 아니면 룰렛 생성 실패', () => {
       // Given: 확률 합계가 90%인 슬롯들
       const invalidSlots: RouletteSlot[] = [
-        new RouletteSlot(1, SlotType.NOTHING, '꽝', 50, 0, 1, 50),
-        new RouletteSlot(2, SlotType.POINT, '포인트', 40, 100, 2, 40),
+        new RouletteSlot(1, SlotType.NOTHING, '꽝', 50, 0, 1),
+        new RouletteSlot(2, SlotType.POINT, '포인트', 40, 100, 2),
       ];
 
       // When & Then: 룰렛 생성 시 에러 발생
