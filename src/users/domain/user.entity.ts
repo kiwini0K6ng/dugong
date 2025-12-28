@@ -4,6 +4,7 @@ import { SocialProvider, UserRole, UserStatus } from './user.enum';
 export class User {
   public readonly id: number;
   public email: string; // 대표 이메일
+  public name: string;
   public nickname: string; // 사용자 수정 가능
   public profileImage: string | null; // 사용자 수정 가능
   public role: UserRole;
@@ -15,6 +16,7 @@ export class User {
   constructor(params: CreateUserParams) {
     this.id = params.id;
     this.email = params.email;
+    this.name = params.name;
     this.nickname = params.nickname;
     this.profileImage = params.profileImage ?? null;
     this.role = params.role ?? UserRole.USER;
