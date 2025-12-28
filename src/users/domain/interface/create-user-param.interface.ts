@@ -7,6 +7,7 @@ import {
 export interface CreateUserParams {
   id: number;
   email: string; // 대표 이메일
+  name: string;
   nickname: string; // 사용자가 수정 가능
   profileImage?: string; // 첫 소셜 로그인의 프로필 이미지
   role?: UserRole;

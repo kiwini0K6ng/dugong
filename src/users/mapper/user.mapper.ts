@@ -14,6 +14,7 @@ export class UserMapper {
     return new User({
       id: raw.id,
       email: raw.email,
+      name: raw.name,
       nickname: raw.nickname,
       profileImage: raw.profileImage,
       role: raw.role as UserRole,
@@ -47,6 +48,7 @@ export class UserMapper {
     return {
       id: user.id,
       email: user.email,
+      name: user.name,
       nickname: user.nickname,
       profileImage: user.profileImage,
       role: user.role,
@@ -62,6 +64,7 @@ export class UserMapper {
     return {
       email: user.email,
       nickname: user.nickname,
+      name: user.name,
       profileImage: user.profileImage,
       role: user.role,
       status: user.status,
