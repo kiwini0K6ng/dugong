@@ -105,4 +105,20 @@ export class RouletteService {
       },
     });
   }
+
+  async getMyRouletteHistory(userId: number) {
+    return this.prisma.roulette.findMany({
+      where: {
+        rouletteHistory: {
+          some: {
+            userId,
+          },
+        },
+      },
+      include: {
+        slots: true,
+        rouletteHistory: true,
+      },
+    });
+  }
 }

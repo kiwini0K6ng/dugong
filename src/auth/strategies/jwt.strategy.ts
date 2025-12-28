@@ -15,7 +15,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   // JWT 토큰이 유효하면 이 메서드 실행
   async validate(payload: any) {
-    console.log(payload);
     const user = await this.authService.validateUser(payload.sub);
 
     if (!user) {

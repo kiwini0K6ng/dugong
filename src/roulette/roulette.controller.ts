@@ -23,6 +23,11 @@ export class RouletteController {
     return this.rouletteService.getActiveRoulettes();
   }
 
+  @Get('history')
+  @UseGuards(JwtAuthGuard)
+  async getMyHistory(@CurrentUser() user: Pick<User, 'id'>) {
+    return this.rouletteService.getMyRouletteHistory(user.id);
+  }
   /**
    * 룰렛 상세 조회 (슬롯 목록 포함)
    */
@@ -35,7 +40,7 @@ export class RouletteController {
    *
    * 내 참여 가능 횟수 조회
    */
-  @Get(':id/my-status')
+  @Get(':id/status')
   @UseGuards(JwtAuthGuard)
   async getMyStatus(
     @CurrentUser() user: Pick<User, 'id'>,
@@ -45,6 +50,7 @@ export class RouletteController {
   }
 
   @Post(':id/spin')
+  @UseGuards(JwtAuthGuard)
   async spin(
     @CurrentUser() user: Pick<User, 'id'>,
     @Param('id', ParseIntPipe) id: number,
