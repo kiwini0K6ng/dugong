@@ -77,6 +77,7 @@ async function main() {
     update: {},
     create: {
       email: 'dugong@example.com',
+      name: '김듀공',
       nickname: '아기듀공',
       // 필요하다면 연관된 데이터도 함께 생성 가능
       socialAccounts: {

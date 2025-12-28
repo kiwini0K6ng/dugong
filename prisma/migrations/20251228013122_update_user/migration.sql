@@ -1,0 +1,33 @@
+/*
+  Warnings:
+
+  - You are about to drop the `roulette_history` table. If the table is not empty, all the data it contains will be lost.
+  - Added the required column `name` to the `users` table without a default value. This is not possible if the table is not empty.
+
+*/
+-- DropTable
+PRAGMA foreign_keys=off;
+DROP TABLE "roulette_history";
+PRAGMA foreign_keys=on;
+
+-- RedefineTables
+PRAGMA defer_foreign_keys=ON;
+PRAGMA foreign_keys=OFF;
+CREATE TABLE "new_users" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "email" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "nickname" TEXT NOT NULL,
+    "profileImage" TEXT,
+    "role" TEXT NOT NULL DEFAULT 'USER',
+    "status" TEXT NOT NULL DEFAULT 'ACTIVE',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    "deletedAt" DATETIME
+);
+INSERT INTO "new_users" ("createdAt", "deletedAt", "email", "id", "nickname", "profileImage", "role", "status", "updatedAt") SELECT "createdAt", "deletedAt", "email", "id", "nickname", "profileImage", "role", "status", "updatedAt" FROM "users";
+DROP TABLE "users";
+ALTER TABLE "new_users" RENAME TO "users";
+CREATE UNIQUE INDEX "users_email_key" ON "users"("email");
+PRAGMA foreign_keys=ON;
+PRAGMA defer_foreign_keys=OFF;
