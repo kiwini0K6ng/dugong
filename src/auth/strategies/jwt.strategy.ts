@@ -1,8 +1,9 @@
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { AuthService } from '../auth.service';
-import { UnauthorizedException } from '@nestjs/common';
 
+@Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private authService: AuthService) {
     super({
@@ -14,6 +15,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   // JWT 토큰이 유효하면 이 메서드 실행
   async validate(payload: any) {
+    console.log(payload);
     const user = await this.authService.validateUser(payload.sub);
 
     if (!user) {

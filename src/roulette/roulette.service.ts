@@ -59,23 +59,19 @@ export class RouletteService {
 
   /**
    * 내 참여 가능 횟수 조회
-   * TODO: 실제 유저 참여 기록을 조회하는 로직 추가 필요
    */
   async getMyStatus(rouletteId: number, userId: number) {
     const roulette = await this.getRoulette(rouletteId);
 
-    // TODO: 실제 DB에서 오늘 참여한 횟수 조회
-    // const todaySpinCount = await this.prisma.rouletteHistory.count({
-    //   where: {
-    //     rouletteId,
-    //     userId,
-    //     createdAt: {
-    //       gte: new Date(new Date().setHours(0, 0, 0, 0)),
-    //     },
-    //   },
-    // });
-
-    const todaySpinCount = 0; // 임시
+    const todaySpinCount = await this.prisma.rouletteHistory.count({
+      where: {
+        rouletteId,
+        userId,
+        createdAt: {
+          gte: new Date(new Date().setHours(0, 0, 0, 0)),
+        },
+      },
+    });
 
     return {
       rouletteId,
@@ -86,16 +82,8 @@ export class RouletteService {
     };
   }
 
-  async createRouletteHistory(
-    history: Omit<RouletteHistory, 'id' | 'createdAt'>,
-  ) {
-    return this.prisma.rouletteHistory.create({
-      data: RouletteHistoryMapper.toPrismaCreate(history),
-    });
-  }
-
   /**
-   * 참여
+   * 룰렛 참여
    * @param rouletteId
    * @param userId
    * @returns
@@ -108,11 +96,13 @@ export class RouletteService {
     }
 
     const spinResult = roulette.spin();
-    return await this.createRouletteHistory({
-      rouletteId,
-      userId,
-      type: spinResult.slot.type,
-      rewardAmount: spinResult.slot.rewardAmount,
+    return await this.prisma.rouletteHistory.create({
+      data: {
+        rouletteId,
+        userId,
+        type: spinResult.slot.type,
+        rewardAmount: spinResult.slot.rewardAmount,
+      },
     });
   }
 }

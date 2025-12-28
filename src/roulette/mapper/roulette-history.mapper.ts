@@ -13,13 +13,4 @@ export class RouletteHistoryMapper {
       raw.createdAt,
     );
   }
-
-  static toPrismaCreate(history: Omit<RouletteHistory, 'id' | 'createdAt'>) {
-    return {
-      rouletteId: history.rouletteId,
-      userId: history.userId,
-      type: history.type,
-      rewardAmount: history.rewardAmount,
-    };
-  }
 }

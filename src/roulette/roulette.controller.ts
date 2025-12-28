@@ -1,5 +1,15 @@
-import { Controller, Get, Param, ParseIntPipe, Post } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { RouletteService } from './roulette.service';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { User } from 'src/users/domain/user.entity';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 
 @Controller('roulette')
 export class RouletteController {
@@ -24,19 +34,21 @@ export class RouletteController {
   /**
    *
    * 내 참여 가능 횟수 조회
-   * @todo: 실제 인증된 유저 ID를 가져오는 로직 필요 (@CurrentUser() 데코레이터 등)
    */
   @Get(':id/my-status')
-  async getMyStatus(@Param('id', ParseIntPipe) id: number) {
-    // TODO: 실제 유저 ID 가져오기
-    const userId = 1; // 임시 유저 ID
-    return this.rouletteService.getMyStatus(id, userId);
+  @UseGuards(JwtAuthGuard)
+  async getMyStatus(
+    @CurrentUser() user: Pick<User, 'id'>,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.rouletteService.getMyStatus(id, user.id);
   }
 
   @Post(':id/spin')
-  async spin(@Param('id', ParseIntPipe) id: number) {
-    // TODO: 실제 유저 ID 가져오기
-    const userId = 1; // 임시 유저 ID
-    return this.rouletteService.participate(id, userId);
+  async spin(
+    @CurrentUser() user: Pick<User, 'id'>,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.rouletteService.participate(id, user.id);
   }
 }
