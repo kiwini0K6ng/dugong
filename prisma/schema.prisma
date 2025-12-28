@@ -34,6 +34,7 @@ model User {
   wallet         Wallet?
   points         Point[]
   transactions   WalletTransaction[]
+  rouletteHistory   RouletteHistory[]
 
   @@map("users")
 }
@@ -43,8 +44,7 @@ model SocialAccount {
   userId Int
   user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-
-  provider   String 
+  provider   String
   providerId String // 소셜 플랫폼에서 제공하는 고유 ID
   email      String // 해당 소셜의 이메일
   isPrimary  Boolean @default(false) // 첫 가입 계정 여부
@@ -158,5 +158,66 @@ model WalletTransaction {
   // 인덱스 설계: 추적과 조회를 위한 핵심
   @@index([sourceType, sourceId]) // 멱등성 체크 및 원천 데이터 추적용
   @@index([userId, createdAt]) // 마이페이지 내역 조회용
-  @@map("wallet_transactions")
 }
+
+model Roulette {
+  id              Int      @id @default(autoincrement())
+  name            String
+  description     String?
+  freeLimitPerDay Int      @default(1)
+  startAt         DateTime
+  endAt           DateTime
+
+  // SQLite는 Enum이 없으므로 String으로 저장
+  // 애플리케이션(NestJS) 단에서 RouletteStatus Enum으로 매핑하여 사용
+  status String @default("INACTIVE")
+
+  slots RouletteSlot[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  rouletteHistory RouletteHistory[]
+
+  @@map("roulettes")
+}
+
+model RouletteSlot {
+  id         Int @id @default(autoincrement())
+  rouletteId Int
+
+  // SQLite는 Enum이 없으므로 String으로 저장
+  type String @default("NOTHING")
+
+  displayName String
+
+  // SQLite는 Decimal을 지원하지 않아 Float(Real)을 사용하거나 
+  // 정수형으로 저장 후 계산(예: 10000을 100.00%로 간주)해야 합니다.
+  // 여기서는 편의상 Float을 사용합니다.
+  rate Float
+
+  rewardAmount Int @default(0)
+  sortOrder    Int @default(0)
+
+  roulette Roulette @relation(fields: [rouletteId], references: [id], onDelete: Cascade)
+
+  @@map("roulette_slots")
+}
+
+model RouletteHistory {
+  id     Int @id @default(autoincrement())
+  userId Int
+  rouletteId Int
+
+  // SQLite는 Enum이 없으므로 String으로 저장
+  type String @default("NOTHING")
+  rewardAmount Int @default(0)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roulette Roulette @relation(fields: [rouletteId], references: [id], onDelete: Cascade)
+
+
+  @@map("roulette_history")
+}
+  
