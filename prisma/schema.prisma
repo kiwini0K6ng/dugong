@@ -33,6 +33,7 @@ model User {
   wallet         Wallet?
   points         Point[]
   transactions   WalletTransaction[]
+  rouletteHistory   RouletteHistory[]
 
   @@map("users")
 }
@@ -175,6 +176,8 @@ model Roulette {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  rouletteHistory RouletteHistory[]
+
   @@map("roulettes")
 }
 
@@ -199,3 +202,21 @@ model RouletteSlot {
 
   @@map("roulette_slots")
 }
+
+model RouletteHistory {
+  id     Int @id @default(autoincrement())
+  userId Int
+  rouletteId Int
+
+  // SQLite는 Enum이 없으므로 String으로 저장
+  type String @default("NOTHING")
+  rewardAmount Int @default(0)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  roulette Roulette @relation(fields: [rouletteId], references: [id])
+
+
+  @@map("roulette_history")
+}
+  

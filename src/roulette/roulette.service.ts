@@ -1,8 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/database/prisma.service';
 import { RouletteMapper } from './mapper/roulette.mapper';
 import { Roulette } from './domain/roulette.entity';
 import { RouletteStatus } from './roulette.enum';
+import { RouletteHistoryMapper } from './mapper/roulette-history.mapper';
+import { RouletteHistory } from './domain/roulette-history.entity';
 
 @Injectable()
 export class RouletteService {
@@ -55,7 +61,7 @@ export class RouletteService {
    * 내 참여 가능 횟수 조회
    * TODO: 실제 유저 참여 기록을 조회하는 로직 추가 필요
    */
-  async getMyStatus(rouletteId: number, userId: string) {
+  async getMyStatus(rouletteId: number, userId: number) {
     const roulette = await this.getRoulette(rouletteId);
 
     // TODO: 실제 DB에서 오늘 참여한 횟수 조회
@@ -78,5 +84,35 @@ export class RouletteService {
       totalSpinsToday: todaySpinCount,
       dailyLimit: roulette.freeLimitPerDay,
     };
+  }
+
+  async createRouletteHistory(
+    history: Omit<RouletteHistory, 'id' | 'createdAt'>,
+  ) {
+    return this.prisma.rouletteHistory.create({
+      data: RouletteHistoryMapper.toPrismaCreate(history),
+    });
+  }
+
+  /**
+   * 참여
+   * @param rouletteId
+   * @param userId
+   * @returns
+   */
+  async participate(rouletteId: number, userId: number) {
+    const roulette = await this.getRoulette(rouletteId);
+    const status = await this.getMyStatus(rouletteId, userId);
+    if (!status.canSpin) {
+      throw new BadRequestException('참여할 수 없습니다.');
+    }
+
+    const spinResult = roulette.spin();
+    return await this.createRouletteHistory({
+      rouletteId,
+      userId,
+      type: spinResult.slot.type,
+      rewardAmount: spinResult.slot.rewardAmount,
+    });
   }
 }

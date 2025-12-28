@@ -71,22 +71,24 @@ async function main() {
     });
   }
 
-  //   // 2. 가짜 유저 및 데이터 생성 (예시)
-  //   await prisma.user.create({
-  //     data: {
-  //       email: 'dugong@example.com',
-  //       name: '아기듀공',
-  //       // 필요하다면 연관된 데이터도 함께 생성 가능
-  //       transactions: {
-  //         create: {
-  //           sourceType: SourceType.DAILY_CHECK_IN,
-  //           amount: 100,
-  //           currencyType: 'GOLD',
-  //           balanceAfter: 100,
-  //         },
-  //       },
-  //     },
-  //   });
+  // 2. 가짜 유저 및 데이터 생성 (예시)
+  await prisma.user.upsert({
+    where: { email: 'dugong@example.com' },
+    update: {},
+    create: {
+      email: 'dugong@example.com',
+      nickname: '아기듀공',
+      // 필요하다면 연관된 데이터도 함께 생성 가능
+      socialAccounts: {
+        create: {
+          provider: 'NAVER',
+          providerId: '123456789',
+          email: 'dugong@example.com',
+          isPrimary: true,
+        },
+      },
+    },
+  });
 
   console.log('✅ 세딩 완료!');
 }
